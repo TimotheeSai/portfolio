@@ -1,0 +1,168 @@
+---
+// import { Debug } from 'astro:components';
+import { getCollection } from "astro:content";
+import PageLayout from "@layouts/PageLayout.astro";
+import { dateRange } from "@lib/utils";
+import { HOME } from "@consts";
+import * as contactInfo from "../content/info/contact.mdx";
+import * as languagesInfo from "../content/info/languages.md";
+
+const allwork = (await getCollection("work"))
+  .sort((a, b) => new Date(b.data.dateStart).valueOf() - new Date(a.data.dateStart).valueOf())
+
+const work = await Promise.all(
+  allwork.map(async (item) => {
+    const { Content } = await item.render();
+    return { ...item, Content };
+  })
+);
+
+const education = await Promise.all(
+    (await getCollection("education"))
+        .map(async (item) => ({ ...item, ...await item.render() }))
+)
+
+const tst = await Astro.glob('../content/info/*.md')
+
+---
+
+<PageLayout title={HOME.TITLE} description={HOME.DESCRIPTION}>
+    <div class="flex mb-4 w-full justify-center">
+        <button
+            id="print-resume"
+            onclick="(e) => console.log(e)"
+            class="relative group w-fit flex pl-8 pr-3 py-1.5 flex-nowrap rounded border border-black/15 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 hover:text-black dark:hover:text-white transition-colors duration-300 ease-in-out"
+        >
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                class="absolute top-1/2 left-2 -translate-y-1/2 size-4 stroke-2 fill-none stroke-current"
+            >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5Zm-3 0h.008v.008H15V10.5Z" />
+            </svg>
+
+            Print
+        </button>
+    </div>
+
+    <div id="printed-content" class="printable m-auto space-y-4 page border border-solid">
+        <section class="animate">
+            <div class="flex flex-col justify-center items-center prose dark:prose-invert">
+                <div class="flex flex-col justify-center items-center">
+                    <h1 class="my-2">{contactInfo.frontmatter.name}</h1>
+                    <h3 class="mb-2 mt-0">{contactInfo.frontmatter.role}</h3>
+                </div>
+                <div class="flex flex-row gap-4">
+                    <div class="flex flex-col">
+                        <p>
+                            ✉️
+                            <a href={`mailto:${contactInfo.frontmatter.mail}`}> {contactInfo.frontmatter.mail}</a>
+                        </p>
+                        <p>
+                            📞
+                            <a href={`tel:${contactInfo.frontmatter.phoneNumber}`}> {contactInfo.frontmatter.phoneNumber}</a>
+                        </p>
+                    </div>
+                    <div>
+                        <p>🏠 {contactInfo.frontmatter.address}</p>
+                        <p>🚗 {contactInfo.frontmatter.driverLiscense}</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section class="animate space-y-2">
+            <div class="flex flex-wrap gap-y-2 items-center justify-between prose ">
+                <h2 class="font-semibold text-black dark:text-white">
+                    💼 Expériences
+                </h2>
+            </div>
+            <ul class="flex flex-col space-y-2">
+                {work.map(entry => !entry.data.hidden && (
+                    <li>
+                        <div class="flex items-center gap-4">
+                            <h3 class="font-semibold text-black dark:text-white">
+                                {entry.data.company}
+                            </h3>
+                            <div class='flex gap-2'>
+                                <div class="text-sm opacity-75">
+                                    {entry.data.role}
+                                </div>
+                                {' · '}
+                                <div class="text-sm opacity-75">
+                                    {entry.data.location}
+                                </div>
+                                {' · '}
+                                <div class="text-sm opacity-75">
+                                    {dateRange(entry.data.dateStart, entry.data.dateEnd)}
+                                </div>
+                            </div>
+                        </div>
+
+                        <article class="my-2">
+                            <entry.Content />
+                        </article>
+                    </li>
+                ))}
+            </ul>
+        </section>
+
+        <div class="flex justify-between">
+            <section class="animate flex-1">
+                <h2 class="font-semibold text-black dark:text-white mb-4">
+                    🏫 Formation
+                </h2>
+                <ul class="flex flex-col space-y-2">
+                    {education.map(entry => (
+                        <li>
+                            <div class="flex gap-2">
+                                <div class="font-semibold text-black dark:text-white">
+                                    {entry.data.institution}
+                                </div>
+                                {' · '}
+                                <div class="text-xs opacity-75">
+                                    {dateRange(entry.data.dateStart, entry.data.dateEnd)}
+                                </div>
+                            </div>
+                            <entry.Content />
+                        </li>
+                    ))}
+                </ul>
+            </section>
+
+            <section class="animate flex-1">
+                <div class="prose dark:prose-invert">
+                    <h2 class="font-semibold text-black dark:text-white">
+                        {languagesInfo.frontmatter.title}
+                    </h2>
+                    <languagesInfo.Content/>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script is:inline>
+    const printButton = document.querySelector('#print-resume');
+    printButton?.addEventListener('click', () => {
+        const isDark = localStorage.getItem("theme") === 'dark';
+        toggleTheme(!isDark);
+        window.print()
+        toggleTheme(isDark);
+    });
+    </script>
+</PageLayout>
+
+<style>
+@media print {
+    body, astro-dev-toolbar {
+        visibility: hidden;
+    }
+    .printable {
+        /* color-scheme: light; */
+        display: block;
+        visibility: visible;
+        position: absolute;
+        left: 0;
+        top: 0;
+    }
+}
+</style>
